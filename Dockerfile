@@ -1,12 +1,14 @@
-FROM node:22 as build
+FROM node:22-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
-RUN npm run build
+RUN npm run build -- --configuration production
 
-# Stage 2: Serve the Angular app using Nginx
 FROM nginx:alpine
-COPY --from=build /app/dist/food-delivery-app /usr/share/nginx/html
+# copy nginx.conf sitting next to Dockerfile → inside container
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+# NOTE: confirm this dist path matches your project name
+COPY --from=build /app/dist/food-delivery-app/browser/ /usr/share/nginx/html/
 EXPOSE 80
-CMD [ "nginx", "-g", "daemon off;" ]
+CMD ["nginx", "-g", "daemon off;"]
